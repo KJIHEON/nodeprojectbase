@@ -1,0 +1,32 @@
+{
+  "name": "workpractice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon --exec babel-node ./src/app.js ",
+    "createdb": "nodemon --exec babel-node ./src/config/createdb.js"
+  },    
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/cli": "^7.21.0",
+    "@babel/core": "^7.21.4",
+    "@babel/node": "^7.20.7",
+    "@babel/preset-env": "^7.21.4",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "moment": "^2.29.4",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.2.0",
+    "nodemailer": "^6.9.1",
+    "reflect-metadata": "^0.1.13",
+    "sequelize": "^6.30.0",
+    "typedi": "^0.8.0",
+    "winston": "^3.8.2"
+  },
+  "type": "commonjs"
+}
