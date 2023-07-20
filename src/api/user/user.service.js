@@ -1,62 +1,123 @@
-import models from '../../models'
-import { mailer } from '../../utill/mail'
-/* 
-create({admin_id, password})
-findOne({ where:{ admin_id, password } })
-findByPk(프라이머리키)
-update({ 바꿀값 }, { where: { email과 일치 값 } })
-findAll({
-    include:[{
-    model:models.user,
-    as: 'user', //별명
-    attributes: ['user_idx'], //한개만 조인해서 가져올 때
-    attributes: { exclude:['password'] } //해당 속성만 빼고 조인해서 가져올 때
-    }]})
-order:[ [모델명,'기준','내림OR올림'] 
-        [user, 'user_idx','DESC' ],
-    ]
-             */
-export default class ApiService {
+import models from '../../models';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
+import Hooks from '../../utils/sequelizeHooks';
+import { logger } from '../../utils/winstonLogger';
+dotenv.config();
 
-    constructor() {}
-/* 회원가입 */
-    async signup(params){
-        try{
-            const { admin_id, password } = params;
-            return models.user.create({
-                admin_id, password
-            })
-        }catch(e){
-            return e
-        }
+export default class ApiService {
+  constructor() {}
+
+  /**
+   * (POST) 유저 회원가입
+   * --
+   */
+  async createUser(body) {
+    try {
+      /* 패스워드 암호화 */
+      body.password = await bcrypt.hash(
+        body.password,
+        parseInt(process.env.SALT)
+      );
+      return await models.user.create(body);
+    } catch (e) {
+      logger.error(`[user][createUser] Error: ${e.message}`);
+      throw e;
     }
-/* 로그인 */
-    async login(body){
-        try{
-            const { admin_id,password } = body
-            console.log(admin_id,password,"dd")
-            return models.user.findOne({
-                where:{ admin_id, password }
-            })
-        }catch(e){
-            return e
-        }
+  }
+
+  /**
+   * (POST) 유저 로그인
+   * --
+   */
+  async login(body) {
+    try {
+      const { user_account, password } = body;
+      const data = await models.user.findOne({ where: { user_account } });
+      /* 패스워트 검사 */
+      const passwordCompare = bcrypt.compareSync(
+        password,
+        data.dataValues.password
+      );
+      if (passwordCompare) {
+        delete data.dataValues.password;
+        return {
+          ...data.dataValues,
+        };
+      } else return null;
+    } catch (e) {
+      logger.error(`[user][login] Error: ${e.message}`);
+      throw e;
     }
-/* 메일 전송 */
-    async sendmail(toEmail){
-        try{
-            console.log(toEmail,"서빗")
-            const emailparam = {
-            toEmail,
-            subject:`안녕하세요 테스트메일입니다`,
-            html:`
-            <h1>테스트 입니다 내가 보냈어요</h1>
-            <b>1231313131321</b>
-            `
-            }
-            return await mailer.sendGmail(emailparam)
-        }catch(e){
-            return e
-        }
+  }
+
+  /**
+   * (GET) 유저 단일 조회
+   * --
+   */
+  async findOneUser(user_id) {
+    try {
+      const hooks = new Hooks();
+      const data = await models.user.findOne({
+        where: { user_id },
+        attributes: { exclude: ['password'] },
+      });
+      return hooks.changeDate(data, 'user');
+    } catch (e) {
+      logger.error(`[user][findOneUser] Error: ${e.message}`);
+      throw e;
     }
+  }
+
+  /**
+   * (GET) 유저 전체 조회
+   * --
+   */
+  async findAllUser() {
+    try {
+      const hooks = new Hooks();
+      const data = await models.user.findAll({
+        attributes: { exclude: ['password'] },
+      });
+      return hooks.changeDate(data, 'user');
+    } catch (e) {
+      logger.error(`[user][findAllUser] Error: ${e.message}`);
+      throw e;
+    }
+  }
+
+  /**
+   * (PUT) 유저 정보 수정
+   * --
+   */
+  async updateUser(user_id, body) {
+    try {
+      if (body.password) {
+        body.password = await bcrypt.hash(
+          body.password,
+          parseInt(process.env.SALT)
+        );
+      }
+      return await models.user.update(body, {
+        where: { user_id },
+        individualHooks: true,
+      });
+    } catch (e) {
+      logger.error(`[user][updateUser] Error: ${e.message}`);
+      throw e;
+    }
+  }
+
+  /**
+   * (DELETE) 유저 삭제
+   * --
+   */
+  async deleteUser(user_id) {
+    try {
+      return await models.user.destroy({ where: { user_id } });
+    } catch (e) {
+      logger.error(`[user][deleteUser] Error: ${e.message}`);
+      throw e;
+    }
+  }
 }

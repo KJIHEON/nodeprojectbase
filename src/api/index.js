@@ -1,6 +1,2 @@
-import user from './user'
-import post from './post'
-export const routes = [
-   ...user,
-   ...post
-]
+import user from './user';
+export const routes = [...user];

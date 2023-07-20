@@ -4,14 +4,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 //데이터베이스 옵션
 const createDBOptions = {
-    username : process.env.DATABASE_USERNAME || 'root',
-    password : process.env.DATABASE_PASSWORD || 'root',
-    host : process.env.DATABASE_HOST || 3306,
-    dialect : process.env.DATABASE_DIALECT,
-}
-console.log(createDBOptions)
+  username: process.env.DATABASE_USERNAME || 'root',
+  password: process.env.DATABASE_PASSWORD || 'root',
+  host: process.env.DATABASE_HOST || 3306,
+  dialect: process.env.DATABASE_DIALECT,
+};
+console.log(createDBOptions);
 //DB_NAME 없을시 new DateBase 생성
-let db_name = process.env.DATABASE_NAME || 'devdatabase';
+let db_name = process.env.DATABASE_NAME || 'sampleDB';
 //시퀄라이즈 생성 메서드
 const dbCreateSequelize = new Sequelize(createDBOptions);
 

@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "name": "sample",
+      "script": "babel-node ./bin/www",
+      "watch": false,
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}

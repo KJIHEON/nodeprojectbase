@@ -4,13 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import Sequelize from 'sequelize';
 const basename = path.basename(__filename);
-//데이터베이스 연결하기위한 설정파일
+const env = process.env.NODE_ENV || 'development';
 const config = require('../../env/database.config');
-
 const db = {};
 const isLogging =
   !process.env.DB_LOG || process.env.DB_LOG !== 'true' ? false : true;
-  
+
 let sequelize;
 if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
@@ -22,7 +21,6 @@ if (config.use_env_variable) {
     username: config.username,
     password: config.password,
     dialect: config.dialect,
-    timezone: "Asia/Seoul",
     logging: isLogging,
     //connection pool
     pool: {
@@ -40,14 +38,6 @@ if (config.use_env_variable) {
 
 fs.readdirSync(__dirname)
   .filter((file) => {
-    /* 
-    file = models 폴더 안 파일
-    basename = index.js
-    file !== basename -> index.js 파일 아닌거 찾기
-    file.indexOf('.') !== 0 -> . 인덱스 찾기(젤 처음만 아니면 됨)
-    file.slice(-9, -3) === .model -> .model로 시작할것
-    file.slice(-3) === '.js -> .js로 끝날것
-    */
     return (
       file.indexOf('.') !== 0 &&
       file !== basename &&

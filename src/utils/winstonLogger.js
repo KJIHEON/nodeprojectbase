@@ -15,11 +15,11 @@ const getToday = () => {
     month:
       d.getMonth() + 1 < 10 ? `0${d.getMonth() + 1}` : `${d.getMonth() + 1}`,
     day: d.getDate() < 10 ? `0${d.getDate()}` : `${d.getDate()}`,
-    timestamp: d.getTime() / 1000
+    timestamp: d.getTime() / 1000,
   };
   return {
     ...dd,
-    date: `${dd.year}${dd.month}${dd.day}`
+    date: `${dd.year}${dd.month}${dd.day}`,
   };
 };
 let today = getToday();
@@ -50,7 +50,7 @@ const getDirPath = () => {
     logFolderDir,
     logYearDir,
     logMonthDir,
-    logDayDir
+    logDayDir,
   };
 };
 
@@ -102,7 +102,7 @@ const fileOption = () => {
       label({ label: 'winston-test' }),
       timestamp(),
       myFormat // log 출력 포맷
-    )
+    ),
   };
 };
 
@@ -110,24 +110,24 @@ const fileOption = () => {
 const infoTransport = new winston.transports.File({
   filename: `info.log`,
   level: 'info',
-  ...fileOption()
+  ...fileOption(),
 });
 
 //
 const errorTransport = new winston.transports.File({
   filename: 'error.log',
   level: 'error',
-  ...fileOption()
+  ...fileOption(),
 });
 
 //
 const logger = winston.createLogger({
-  transports: [infoTransport, errorTransport]
+  transports: [infoTransport, errorTransport],
   // format: combine(myFormat),
 });
 
 const stream = {
-  write: message => {
+  write: (message) => {
     const d = getToday();
 
     // 날짜가 바꼈을 때
@@ -138,7 +138,7 @@ const stream = {
       // console.log('message: ', message.level);
     }
     logger.info(message);
-  }
+  },
 };
 
 export { logger, stream };

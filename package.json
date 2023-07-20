@@ -1,32 +1,50 @@
 {
-  "name": "workpractice",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "sample",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --exec babel-node ./src/app.js ",
-    "createdb": "nodemon --exec babel-node ./src/config/createdb.js"
-  },    
-  "author": "",
-  "license": "ISC",
+    "DB_DEBUG": "DB_SYNC=true DB_LOG=true npm start",
+    "start": "nodemon --exec cross-env NODE_ENV=development babel-node ./bin/www",
+    "deploy": "pm2 start ./deploy.json"
+  },
   "dependencies": {
-    "@babel/cli": "^7.21.0",
-    "@babel/core": "^7.21.4",
-    "@babel/node": "^7.20.7",
-    "@babel/preset-env": "^7.21.4",
-    "cookie-parser": "^1.4.6",
-    "dotenv": "^16.0.3",
+    "@aws-sdk/client-s3": "^3.332.0",
+    "@aws-sdk/s3-request-presigner": "^3.271.0",
+    "@babel/cli": "^7.10.4",
+    "@babel/core": "^7.10.4",
+    "@babel/node": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "bcrypt": "^5.1.0",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "debug": "~2.6.9",
+    "dotenv": "^8.2.0",
+    "ejs": "^3.1.9",
+    "errorhandler": "^1.5.1",
     "express": "^4.18.2",
+    "http-errors": "~1.6.3",
+    "http-status-codes": "^2.2.0",
     "jsonwebtoken": "^9.0.0",
-    "moment": "^2.29.4",
-    "morgan": "^1.10.0",
-    "mysql2": "^3.2.0",
-    "nodemailer": "^6.9.1",
+    "moment": "^2.27.0",
+    "morgan": "~1.9.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^2.1.0",
+    "nodemailer": "^6.9.3",
     "reflect-metadata": "^0.1.13",
-    "sequelize": "^6.30.0",
+    "sequelize": "^6.2.4",
+    "swagger-jsdoc": "^4.0.0",
+    "swagger-ui-express": "^4.1.4",
     "typedi": "^0.8.0",
-    "winston": "^3.8.2"
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-preset-env": "^1.7.0",
+    "cross-env": "^7.0.2",
+    "nodemon": "^2.0.4"
+  },
+  "resolutions": {
+    "babel-core": "7.0.0-bridge.0"
   },
   "type": "commonjs"
 }
