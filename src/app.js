@@ -35,13 +35,24 @@ const swaggerSpec = swaggerJSDoc(swaggerConfig());
 
 app.disable('x-powered-by');
 // CORS 허용
-app.use(
-  cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTION'],
-    credentials: true, // enable set cookie
-  })
-);
+const prod = process.env.NODE_ENV == 'production';
+if (prod) {
+  app.use(
+    cors({
+      origin: ['', ''],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTION'],
+      credentials: true, // enable set cookie
+    })
+  );
+} else {
+  app.use(
+    cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTION'],
+      credentials: true, // enable set cookie
+    })
+  );
+}
 /* 데이터 베이스 연결 */
 // models.sequelize
 //   .sync({ force: true }) // true 로 설정 시 서버 실행 시마다 테이블 재생성
