@@ -5,12 +5,12 @@ dotenv.config();
 export default class Authenticator {
   /* 토큰 생성  */
   async createToken(data, expiresIn) {
-    return JWT.sign(data, process.env.JWTSECRETKEY, { expiresIn });
+    return JWT.sign(data, process.env.SECRET, { expiresIn });
   }
   /* 토큰 검증 */
   async verify(token) {
     try {
-      const decode = JWT.verify(token, process.env.JWTSECRETKEY);
+      const decode = JWT.verify(token, process.env.SECRET);
       if (decode) return decode;
       else return false;
     } catch (e) {
