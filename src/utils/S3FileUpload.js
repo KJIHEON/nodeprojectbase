@@ -1,79 +1,100 @@
 // s3 접근하기 위해 불러옴
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-// presigned url 이용하기 위해 불러옴
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
 // //.env 네이버 정보 읽어오기
-// const naverEndpoint = process.env.NAVER_BUCKET_ENDPOINT;
-// const naverRegion = process.env.NAVER_BUCKET_REGION;
-// const naverBucket = process.env.NAVER_BUCKET_NAME;
-// const naverAccess_key = process.env.NAVER_ACCESS_KEY;
-// const naverSecret_key = process.env.NAVER_SECRET_KEY;
-/**
- * naver s3 클라이언트 연결
- * ----
- * */
-// const s3 = new S3Client({
-//   credentials: {
-//     accessKeyId: naverAccess_key,
-//     secretAccessKey: naverSecret_key,
-//   },
-//   region: naverRegion,
-//   endpoint: naverEndpoint,
-// });
+const type = process.env.S3_TYPE === 'NAVER' ? true : false;
+console.log(type ? '네이버' : '아마존');
+const AccessKey = type
+  ? process.env.NAVER_ACCESS_KEY
+  : process.env.AWS_ACCESS_KEY;
+
+const SecretKey = type
+  ? process.env.NAVER_SECRET_KEY
+  : process.env.AWS_SECRET_KEY;
+
+const Bucket = type
+  ? process.env.NAVER_BUCKET_NAME
+  : process.env.AWS_BUCKET_NAME;
+
+const BucketRegion = type
+  ? process.env.NAVER_BUCKET_REGION
+  : process.env.AWS_BUCKET_REGION;
+const Endpoint = type ? process.env.NAVER_BUCKET_ENDPOINT : null;
+
+const s3 = type
+  ? new S3Client({
+      credentials: {
+        accessKeyId: AccessKey,
+        secretAccessKey: SecretKey,
+      },
+      region: BucketRegion,
+      endpoint: Endpoint,
+    })
+  : new S3Client({
+      credentials: {
+        accessKeyId: AccessKey,
+        secretAccessKey: SecretKey,
+      },
+      region: BucketRegion,
+    });
 
 /**
- * Naver file 업로드
+ * file 업로드
  * ---
  */
-// export async function uploadFile(fileBuffer, fileName, mimetype) {
-//   const uploadParams = {
-//     Bucket: naverBucket,
-//     Key: fileName,
-//     Body: fileBuffer,
-//     ACL: 'public-read', //권한
-//     ContentType: mimetype,
-//   };
-//   console.log('uploadParams', uploadParams);
-
-//   const res = await s3.send(new PutObjectCommand(uploadParams));
-//   return res.$metadata.httpStatusCode;
-// }
-
-// //.env에서 aws 정보 읽어오기
-const awsAccessKey = process.env.AWS_ACCESS_KEY;
-const awsSecretKey = process.env.AWS_SECRET_KEY;
-const awsS3Bucket = process.env.AWS_BUCKET_NAME;
-const awsS3BucketRegion = process.env.AWS_BUCKET_REGION;
-
-// aws s3 클라이언트 연결
-const s3 = new S3Client({
-  credentials: {
-    accessKeyId: awsAccessKey,
-    secretAccessKey: awsSecretKey,
-  },
-  region: awsS3BucketRegion,
-});
-
-// aws file 업로드
-export async function uploadFile(fileBuffer, fileName, mimetype) {
-  const uploadParams = {
-    Bucket: awsS3Bucket,
-    Key: fileName,
-    Body: fileBuffer,
-    // ACL: 'public-read', //권한
-    ContentType: mimetype,
-  };
-  console.log('uploadParams', uploadParams);
-
+export const uploadFile = async (fileBuffer, fileName, mimetype) => {
+  const uploadParams = type
+    ? {
+        Bucket: Bucket,
+        Key: fileName,
+        Body: fileBuffer,
+        ACL: 'public-read', //권한
+        ContentType: mimetype,
+      }
+    : {
+        Bucket: Bucket,
+        Key: fileName,
+        Body: fileBuffer,
+        ContentType: mimetype,
+      };
+  // console.log('uploadParams', uploadParams);
   const res = await s3.send(new PutObjectCommand(uploadParams));
   return res.$metadata.httpStatusCode;
-}
+};
+/**
+ * file getFileObject blob 변환(O)
+ * ---
+ */
+export const getFileObject = async (key) => {
+  const params = {
+    Bucket: Bucket,
+    Key: key,
+  };
+  const command = new GetObjectCommand(params);
+  const response = await s3.send(command);
+  let bufferData = Buffer.from([]);
+  response.Body.on('data', (chunk) => {
+    bufferData = Buffer.concat([bufferData, chunk]);
+  });
 
+  // response.Body의 데이터를 모두 읽을 때까지 대기합니다.
+  await new Promise((resolve) => {
+    response.Body.on('end', () => {
+      resolve();
+    });
+  });
+  // console.log(bufferData, 'bufferData');
+  // console.log(response.ContentType);
+  return bufferData;
+};
 /**
  * file 배열 업로드(x)
  * ---
  */
-export async function uploadFiles(fileBuffer, fileName, mimetype) {
+export const uploadFiles = async (fileBuffer, fileName, mimetype) => {
   const uploadParams = {
     Bucket: Bucket,
     Key: fileName,
@@ -81,25 +102,5 @@ export async function uploadFiles(fileBuffer, fileName, mimetype) {
     ACL: 'public-read', //권한
     ContentType: mimetype,
   };
-  console.log('uploadParams', uploadParams);
-
-  // const res = await s3.send(new PutObjectCommand(uploadParams));
-  // return res.$metadata.httpStatusCode;
-}
-/**
- * file signedUrl 가져오기(x)
- * ---
- */
-export async function getSignedFileUrl(data) {
-  const params = {
-    Bucket: Bucket,
-    Key: data.name,
-  };
-  const command = new PutObjectCommand(params);
-  console.log(command);
-  const url = await getSignedUrl(s3, command, {
-    expiresIn: 3600,
-  });
-  console.log(url);
-  return url;
-}
+  // console.log('uploadParams', uploadParams);
+};

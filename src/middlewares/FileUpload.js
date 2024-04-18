@@ -28,21 +28,19 @@ export async function handler(req, res, next) {
     const storage = multer.memoryStorage();
     const upload = multer({ storage: storage });
     try {
-      // console.log('upload', upload);
       // // 파라미터로 들어가는 텍스트(image)는
       // // req에서 이미지 파일 첨부한 key와 동일하게 맞춰야한다.
       await runMiddleware(req, res, upload.single('file'));
       const fileBuffer = req.file.buffer;
       const fileName = req.body.name; //키값
       const fileType = req.file.mimetype;
-      console.log(fileBuffer);
-      console.log('fileName=>', fileName);
-      console.log('fileType=>', fileType);
       if (fileType.startsWith('image/')) {
         // 이미지 파일 업로드 로직 실행
         await uploadFile(fileBuffer, fileName, fileType);
       } else if (fileType.startsWith('application/')) {
         // PDF 파일 업로드 로직 실행
+        await uploadFile(fileBuffer, fileName, fileType);
+      } else if (fileType.startsWith('text/')) {
         await uploadFile(fileBuffer, fileName, fileType);
       } else {
         // 지원하지 않는 파일 형식
@@ -63,7 +61,45 @@ export async function handler(req, res, next) {
     });
   }
 }
-
+/**
+ * multer 배열 업로드 함수
+ * ---
+ */
+export async function multiplehandler(req, res, next) {
+  // console.log('들어가기전');
+  if (req.method === 'POST' || req.method === 'PUT') {
+    const { type } = req.body;
+    if (type === 'code') {
+      next();
+    } else {
+      // 메모리 스토리지 엔진
+      const storage = multer.memoryStorage();
+      const upload = multer({ storage: storage });
+      try {
+        // // 파라미터로 들어가는 텍스트(image)는
+        // // req에서 이미지 파일 첨부한 key와 동일하게 맞춰야한다.
+        await runMiddleware(req, res, upload.array('file'));
+        const filesList = req?.files;
+        const files = filesList?.map((file) => ({
+          filename: file.originalname,
+          content: file.buffer,
+          contentType: file.mimetype,
+        }));
+        req.filesInfo = files;
+        next();
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+          resultMessage: 'Server error [FileUpload multiplehandler]',
+        });
+      }
+    }
+  } else {
+    return res.status(500).json({
+      resultMessage: 'Method error [FileUpload handler] Not Post',
+    });
+  }
+}
 export const config = {
   api: {
     bodyParser: false,

@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer'
-import dotenv from 'dotenv'
-dotenv.config()
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+dotenv.config();
 /*
  const transporter = nodemailer.createTransport({
             service:'gmail', //전송하는 서비스
@@ -39,43 +39,43 @@ dotenv.config()
 }; */
 /* 메일 전송 객체 */
 export const mailer = {
+  /* 메일 전송 */
+  sendGmail: async (param) => {
+    console.log(process.env.GMAIL_ID);
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', //전송하는 서비스
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // 465의 경우 true, 다른 포트의 경우 false
+      auth: {
+        // Gmail 주소 입력, 'testmail@gmail.com'
+        user: process.env.GMAIL_ID,
+        // Gmail 입 비밀번호 입력
+        pass: process.env.GMAIL_APP_PW,
+      },
+    });
+    /* 메일 옵션 */
+    const mailOptions = {
+      from: process.env.GMAIL_ID, // 보내는 메일의 주소
+      to: param.toEmail, // 수신할 이메일
+      subject: param.subject, // 메일 제목
+      html: param.html, // 메일 내용
+    };
     /* 메일 전송 */
-    sendGmail: async (param)=>{
-        console.log(process.env.GMAIL_ID)
-        const transporter = nodemailer.createTransport({
-            service:'gmail', //전송하는 서비스
-            host: 'smtp.gmail.com',
-            port:587,
-            secure: false, // 465의 경우 true, 다른 포트의 경우 false
-            auth: {
-                // Gmail 주소 입력, 'testmail@gmail.com'
-                user: process.env.GMAIL_ID,
-                // Gmail 입 비밀번호 입력
-                pass: process.env.GMAIL_APP_PW,
-              },
-        })
-        /* 메일 옵션 */
-        const mailOptions = {
-            from: process.env.GMAIL_ID, // 보내는 메일의 주소
-            to: param.toEmail, // 수신할 이메일
-            subject: param.subject, // 메일 제목
-            html: param.html // 메일 내용
-        };
-         /* 메일 전송 */
-       /*   transporter.sendMail(mailOptions, function (error, info) {
+    /*   transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
             console.log(error);
           } else {
             console.log('Email sent: ' + info.response);
           }
         }); */
-         try{
-          const result = await transporter.sendMail(mailOptions);
-          console.log('Email sent: ' + result.response)
-          return true
-         }catch(e){
-          console.log(e.message)
-          return false
-         }
+    try {
+      const result = await transporter.sendMail(mailOptions);
+      console.log('Email sent: ' + result.response);
+      return true;
+    } catch (e) {
+      console.log(e.message);
+      return false;
     }
-}
+  },
+};

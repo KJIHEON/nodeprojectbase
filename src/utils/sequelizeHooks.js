@@ -6,16 +6,18 @@
 module.exports = class Hooks {
   constructor() {}
   /**
-   * 유닉스 타임으로 변환
+   * 유닉스 타임으로 함수
    * --
    *  */
-  static unixTime(dateObj) {
+  unixTime(dateObj) {
     const timezoneOffset = new Date().getTimezoneOffset();
     // 오프셋 값이 0인 경우, 영국 시간대로 간주
     if (timezoneOffset === 0) {
+      //영국(한국 - 9)
       if (!dateObj) return Math.trunc(new Date() / 1000);
-      else return Math.trunc(new Date(dateObj) / 1000) - 9 * 60 * 60;
+      else return Math.trunc(new Date(dateObj) / 1000);
     } else {
+      //한국(영국 + 9)
       if (!dateObj) return Math.trunc(new Date() / 1000);
       else return Math.trunc(new Date(dateObj) / 1000);
     }
@@ -24,23 +26,97 @@ module.exports = class Hooks {
    * 날짜 데이터 포맷 템플릿
    * --
    */
-  static formattedDate(dateObj) {
-    const date = new Date(dateObj);
+  formattedDate(dateObj) {
+    const date = new Date(dateObj * 1000);
     return date;
   }
+
   /**
-   * 데이터 생성시 실행 되는 훅
+   * 날짜 필드따라 유닉스 변환 함수
+   * --
+   * @param {*} rec : 데이터 객체
+   * @param {*} field - 컬럼명
+   */
+  processDataField(rec, field) {
+    if (typeof rec[field] === 'string') {
+      rec.setDataValue(field, this.unixTime(rec[field]));
+    }
+  }
+
+  /**
+   * 쿼리 생성 함수
+   * --
+   * @param {*} data {key:value ...}: 쿼리 생설 아이템
+   */
+  queryBuilder(data) {
+    const queryObject = {};
+    const keyQueryCheck = ['start_date', 'created_at'];
+    for (const key in data) {
+      if (data[key]) {
+        if (
+          data[key] === 'null' ||
+          data[key] === undefined ||
+          data[key] === 'undefined' ||
+          data[key] === null
+        )
+          return;
+        if (keyQueryCheck.includes(key)) {
+          const today = new Date(data[key]);
+          const firstDayOfMonth = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1,
+            today.getHours()
+          );
+          const lastDayOfMonth = new Date(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            0,
+            today.getHours() + 23,
+            today.getMinutes() + 59,
+            today.getSeconds() + 59
+          );
+          const firstDayOfMonthUnix = firstDayOfMonth / 1000;
+          const lastDayOfMonthUnix = lastDayOfMonth / 1000;
+          queryObject[key] = {
+            [Sequelize.Op.between]: [firstDayOfMonthUnix, lastDayOfMonthUnix],
+          };
+        } else {
+          queryObject[key] = data[key];
+        }
+      }
+    }
+
+    return queryObject;
+  }
+  /**
+   * 데이터 생성시 실행 되는 훅(bulk)
    * --
    */
-  createdDate(rec, type) {
+  createdBulkDate(rec, type) {
     switch (type) {
-      case undefined:
-        rec.created_at = Hooks.unixTime();
-        rec.updated_at = Hooks.unixTime();
-        rec.setDataValue('created_at', Hooks.unixTime());
-        rec.setDataValue('updated_at', Hooks.unixTime());
+      case 'schedule':
+      case 'calculate':
+        rec?.forEach((scheduleItem) => {
+          this.processDataField(scheduleItem, 'start_date');
+          this.processDataField(scheduleItem, 'end_date');
+          scheduleItem.created_at = this.unixTime();
+          scheduleItem.updated_at = this.unixTime();
+        });
         break;
     }
+  }
+
+  /**
+   * 데이터 생성 유닉스 변환 훅
+   * --
+   */
+  createdDate(rec) {
+    rec.created_at = this.unixTime();
+    rec.updated_at = this.unixTime();
+    this.processDataField(rec, 'start_date');
+    this.processDataField(rec, 'end_date');
+    this.processDataField(rec, 'birthday');
   }
   /**
    * 수정시 실행 되는 훅
@@ -67,42 +143,16 @@ module.exports = class Hooks {
       /* 배열(전체조회) */
       if (type == undefined) {
         return rec.map((x) => {
-          const created_at = x.created_at * 1000;
-          const updated_at = x.updated_at * 1000;
-          x.setDataValue('created_at', Hooks.formattedDate(created_at));
-          x.setDataValue('updated_at', Hooks.formattedDate(updated_at));
+          x.created_at = this.formattedDate(x?.created_at);
+          x.updated_at = this.formattedDate(x?.updated_at);
           return x;
         });
-      } else if (type == 'review') {
-        const data = rec.map((x) => {
-          return {
-            count: x.count,
-            rows: x.rows.map((x) => {
-              const created_at = x.created_at * 1000;
-              const updated_at = x.updated_at * 1000;
-              x.setDataValue('created_at', Hooks.formattedDate(created_at));
-              x.setDataValue('updated_at', Hooks.formattedDate(updated_at));
-              return x;
-            }),
-          };
-        });
-        return { count: { ...data }[0].count, rows: { ...data }[0].rows };
       }
     } else {
       /* 객체(단일조회) */
       if (type == undefined) {
-        const created_at = rec.created_at * 1000;
-        const updated_at = rec.updated_at * 1000;
-        rec.setDataValue('created_at', Hooks.formattedDate(created_at));
-        rec.setDataValue('updated_at', Hooks.formattedDate(updated_at));
-        return rec;
-      } else if (type == 'schedule' || type == 'event') {
-        const created_at = rec.created_at * 1000;
-        const start_date = rec.start_date * 1000;
-        const end_date = rec.end_date * 1000;
-        rec.setDataValue('created_at', Hooks.formattedDate(created_at));
-        rec.setDataValue('start_date', Hooks.formattedDate(start_date));
-        rec.setDataValue('end_date', Hooks.formattedDate(end_date));
+        rec.created_at = this.formattedDate(rec?.created_at);
+        rec.updated_at = this.formattedDate(rec?.updated_at);
         return rec;
       }
     }

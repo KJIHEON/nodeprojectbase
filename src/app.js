@@ -11,7 +11,6 @@ import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import errorhandler from 'errorhandler';
 /* Swagger */
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -22,7 +21,8 @@ import { routes } from './api';
 import models from './models';
 /* Loging */
 import morgan from 'morgan';
-import { logger, stream } from './utils/winstonLogger';
+import { logger, stream, createMorganFormat } from './utils/winstonLogger';
+import { ALLOWED_DOMAIN } from './utils/constants';
 
 /* ENV setup */
 dotenv.config();
@@ -32,14 +32,13 @@ const app = express();
 const errMessageColor = '\x1b[33m%s\x1b[0m';
 /* swagger setup */
 const swaggerSpec = swaggerJSDoc(swaggerConfig());
-
 app.disable('x-powered-by');
 // CORS 허용
 const prod = process.env.NODE_ENV == 'production';
 if (prod) {
   app.use(
     cors({
-      origin: ['', ''],
+      origin: ALLOWED_DOMAIN,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTION'],
       credentials: true, // enable set cookie
     })
@@ -78,9 +77,29 @@ if (prod) {
   - tiny
   [:method :url :status :res[content-length] - :response-time ms]
  */
+//SECTION: 로그 설정
+let responseData;
+// 미들웨어 설정
+app.use((req, res, next) => {
+  // res.json() 메서드를 오버라이드하여 응답 데이터를 기록
+  const originalJson = res.json;
+  res.json = function (data) {
+    responseData = data;
+    originalJson.call(this, data);
+  };
+  next();
+});
+app.use(
+  morgan(
+    (tokens, req, res) => {
+      const morganFormat = createMorganFormat(tokens, req, res, responseData);
+      return JSON.stringify(morganFormat);
+    },
+    { stream }
+  )
+);
 
-app.use(morgan('combined', { stream }));
-
+//!SECTION
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -102,31 +121,6 @@ routes.forEach((route) => {
     route.controller
   );
 });
-
-// app.get(
-//   '*',
-//   wrapAsync(async function (req, res) {
-//     await new Promise((resolve) => setTimeout(() => resolve(), 50));
-//     // 비동기 에러
-//     throw new Error('에러 발생!');
-//   })
-// );
-
-// app.use(function (err, req, res, next) {
-//   logger.error(`[Global error handler] Error: ${err.message}`);
-//   console.log(errMessageColor, '----------------------------------------');
-//   console.log('Error Message: \x1b[33m%s\x1b[0m', err.message);
-//   console.log(errMessageColor, '----------------------------------------');
-//   res.json({ status: err.status, message: err.message });
-// });
-
-// function wrapAsync(fn) {
-//   return function (req, res, next) {
-//     // 모든 오류를 .catch() 처리하고 체인의 next() 미들웨어에 전달
-//     // (이 경우에는 오류 처리기)
-//     fn(req, res, next).catch(next);
-//   };
-// }
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
